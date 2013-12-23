@@ -86,7 +86,7 @@ handle_call({ActivityId, Message}, From, State = #state{module = Mod, data = Mod
 
 %% @private
 handle_cast({ActivityId, Message}, State = #state{module = Mod, data = ModState}) ->
-  poirot:spread_wrap(ActivityId, fun() ->
+  poirot:spawn_wrap(ActivityId, fun() ->
         case Mod:handle_cast(Message, ModState) of
           {noreply, NewModState} ->
             {noreply, State#state{data = NewModState}};

@@ -3,10 +3,10 @@
 
 -export([current/0]).
 -export([start/1, stop/0, stop/1, suspend/0, suspend/1, resume/1]).
--export([wrap/2, spread_wrap/2]).
+-export([wrap/2, spawn_wrap/2, spread_wrap/2]).
 
 % Process dictionary key to keep the current activity id
--define(KEY, activity_id).
+-define(KEY, '__poirot_activity_id').
 
 % Get the activity in the current process
 current() ->
@@ -16,6 +16,16 @@ current() ->
 % any) is popped back when Fun() finishes.
 wrap(Description, Fun) ->
   Save = start(Description),
+  try
+    Fun()
+  after
+    stop(Save)
+  end.
+
+spawn_wrap(ParentId, Fun) ->
+  NewId = new_id(),
+  Save = set_current(NewId),
+  poirot_client_srv:begin_activity(ParentId, <<"Spawned activity">>),
   try
     Fun()
   after
@@ -36,16 +46,9 @@ spread_wrap(Id, Fun) ->
 % previous activity.
 start(Description) ->
   NewId = new_id(),
-  Save = set_current(NewId),
-  lager:log(info, [
-      {type, begin_activity}, 
-      {description, Description}, 
-      {pid, self()}, 
-      {activity, NewId},
-      {short_activity, short_id(NewId)},
-      {parent_activity, Save}
-    ], activity_started),
-  Save.
+  Parent = set_current(NewId),
+  poirot_client_srv:begin_activity(Parent, Description),
+  Parent.
 
 % Stop the current activity.
 stop() ->
@@ -54,13 +57,7 @@ stop() ->
 % Stop the current activity and transfer back control to another activity.
 stop(RestoreId) ->
   Save = set_current(RestoreId),
-  lager:log(info, [
-      {type, end_activity}, 
-      {pid, self()}, 
-      {activity, Save},
-      {short_activity, short_id(Save)},
-      {parent_activity, RestoreId}
-    ], activity_stopped),
+  poirot_client_srv:end_activity(),
   Save.
 
 % Suspends the current activity and returns the activity id.

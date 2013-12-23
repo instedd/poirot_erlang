@@ -31,7 +31,7 @@ handle_call(get_loglevel, #state{level = Level} = State) ->
 handle_call({set_loglevel, Level}, State) ->
   try lager_util:config_to_mask(Level) of
     Levels ->
-      {ok, ok, State#state{level  =Levels}}
+      {ok, ok, State#state{level = Levels}}
   catch
     _:_ ->
       {ok, {error, bad_log_level}, State}

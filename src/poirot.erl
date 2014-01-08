@@ -83,6 +83,10 @@ new_id() ->
 
 short_id(undefined) ->
   undefined;
+short_id(<<>>) ->
+  undefined;
+short_id([]) ->
+  undefined;
 short_id(Id) ->
   <<Short:32, _:96>> = uuid:to_binary(Id),
   lists:flatten(io_lib:format("~8.16.0b", [Short])).

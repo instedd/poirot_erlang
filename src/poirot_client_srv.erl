@@ -45,7 +45,7 @@ activity_body(Activity) ->
   [
     {<<"_type">>, <<"activity">>},
     {<<"_id">>, make_printable(Activity)},
-    {<<"@timestamp">>, iso8601:format(erlang:now())},
+    {<<"@timestamp">>, format_timestamp(erlang:now())},
     {<<"@tags">>, []},
     {<<"@pid">>, make_printable(self())}
   ].
@@ -65,7 +65,7 @@ lager_entry(LagerMsg) ->
     {<<"_type">>, <<"logentry">>},
     {<<"@level">>, Severity},
     {<<"@message">>, make_printable(Message)},
-    {<<"@timestamp">>, iso8601:format(Timestamp)},
+    {<<"@timestamp">>, format_timestamp(Timestamp)},
     {<<"@tags">>, Tags},
     {<<"@activity">>, make_printable(Activity)},
     {<<"@pid">>, make_printable(Pid)},
@@ -74,6 +74,12 @@ lager_entry(LagerMsg) ->
 
   gen_server:cast(?SERVER, {write, null, <<"logentry">>, Body}).
 
+format_timestamp({_,_,Microsecs} = Timestamp) ->
+  {{Y,Mo,D}, {H,Mn,S}} = calendar:now_to_datetime(Timestamp),
+  S1 = S + Microsecs/1000000,
+  FmtStr = "~4.10.0B-~2.10.0B-~2.10.0BT~2.10.0B:~2.10.0B:~9.6.0fZ",
+  IsoStr = io_lib:format(FmtStr, [Y, Mo, D, H, Mn, S1]),
+  list_to_binary(IsoStr).
 
 make_printable(A) when is_atom(A) orelse is_binary(A) orelse is_number(A) -> A;
 make_printable(P) when is_pid(P) -> iolist_to_binary(pid_to_list(P));

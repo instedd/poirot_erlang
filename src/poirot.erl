@@ -56,8 +56,8 @@ stop() ->
 
 % Stop the current activity and transfer back control to another activity.
 stop(RestoreId) ->
-  Save = set_current(RestoreId),
   poirot_client_srv:end_activity(),
+  Save = set_current(RestoreId),
   Save.
 
 % Suspends the current activity and returns the activity id.

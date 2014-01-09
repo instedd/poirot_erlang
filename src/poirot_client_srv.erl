@@ -32,14 +32,18 @@ begin_activity(ParentActivity, Description) ->
   Body = activity_body(Activity),
   Body1 = [
     {<<"@parent">>, make_printable(ParentActivity)},
-    {<<"@fields">>, {struct, [{<<"description">>, Description}]}}
+    {<<"@fields">>, {struct, [{<<"description">>, Description}]}},
+    {<<"@start">>, format_timestamp(erlang:now())}
     | Body],
   gen_server:cast(?SERVER, {write, Activity, <<"begin_activity">>, Body1}).
 
 end_activity() ->
   Activity = poirot:current(),
   Body = activity_body(Activity),
-  gen_server:cast(?SERVER, {write, Activity, <<"end_activity">>, Body}).
+  Body1 = [
+    {<<"@end">>, format_timestamp(erlang:now())}
+    | Body],
+  gen_server:cast(?SERVER, {write, Activity, <<"end_activity">>, Body1}).
 
 activity_body(Activity) ->
   [

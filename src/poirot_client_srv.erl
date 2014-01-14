@@ -15,7 +15,7 @@
 
 
 start_link() ->
-  Url = application:get_env(poirot_erlang, hwm, ?DEFAULT_URL),
+  Url = application:get_env(poirot_erlang, url, ?DEFAULT_URL),
   Hwm = application:get_env(poirot_erlang, hwm, ?DEFAULT_HWM),
   Source = application:get_env(poirot_erlang, source, ?DEFAULT_SOURCE),
   Options = [{source, Source}, {url, Url}, {hwm, Hwm}],

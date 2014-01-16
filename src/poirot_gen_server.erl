@@ -66,8 +66,8 @@ init({Mod, Args}) ->
   end.
 
 %% @private
-handle_call({ActivityId, Message}, From, State = #state{module = Mod, data = ModState}) ->
-  poirot:spread_wrap(ActivityId, fun() ->
+handle_call({Activity, Message}, From, State = #state{module = Mod, data = ModState}) ->
+  poirot:inside(Activity, fun() ->
         case Mod:handle_call(Message, From, ModState) of
           {reply, Reply, NewModState} ->
             {reply, Reply, State#state{data = NewModState}};
@@ -85,8 +85,9 @@ handle_call({ActivityId, Message}, From, State = #state{module = Mod, data = Mod
     end).
 
 %% @private
-handle_cast({ActivityId, Message}, State = #state{module = Mod, data = ModState}) ->
-  poirot:spawn_wrap(ActivityId, fun() ->
+handle_cast({Activity, Message}, State = #state{module = Mod, data = ModState}) ->
+  Description = io_lib:format("~w:cast(~p)", [Mod, Message]),
+  poirot:new_inside(Activity, Description, async, fun() ->
         case Mod:handle_cast(Message, ModState) of
           {noreply, NewModState} ->
             {noreply, State#state{data = NewModState}};

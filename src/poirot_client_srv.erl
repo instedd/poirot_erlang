@@ -1,8 +1,10 @@
 -module(poirot_client_srv).
 
 -export([start_link/0]).
--export([begin_activity/2, end_activity/0, lager_entry/1, set_source/1, get_source/0]).
+-export([begin_activity/1, end_activity/1, lager_entry/1, set_source/1, get_source/0]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
+
+-include("poirot.hrl").
 
 -behaviour(gen_server).
 
@@ -27,29 +29,32 @@ get_source() ->
 set_source(Source) ->
   gen_server:call(?SERVER, {set_source, Source}).
 
-begin_activity(ParentActivity, Description) ->
-  Activity = poirot:current(),
+begin_activity(Activity = #activity{id = Id}) ->
   Body = activity_body(Activity),
   Body1 = [
-    {<<"@parent">>, make_printable(ParentActivity)},
-    {<<"@fields">>, {struct, [{<<"description">>, Description}]}},
     {<<"@start">>, format_timestamp(erlang:now())}
     | Body],
-  gen_server:cast(?SERVER, {write, Activity, <<"begin_activity">>, Body1}).
+  gen_server:cast(?SERVER, {write, Id, <<"begin_activity">>, Body1}).
 
-end_activity() ->
-  Activity = poirot:current(),
+end_activity(Activity = #activity{id = Id}) ->
   Body = activity_body(Activity),
   Body1 = [
     {<<"@end">>, format_timestamp(erlang:now())}
     | Body],
-  gen_server:cast(?SERVER, {write, Activity, <<"end_activity">>, Body1}).
+  gen_server:cast(?SERVER, {write, Id, <<"end_activity">>, Body1}).
 
-activity_body(Activity) ->
+activity_body(#activity{id = Id, description = Description, metadata = Metadata, parent = Parent}) ->
+  ParentId = case Parent of
+    undefined -> undefined;
+    #activity{id = ParId} -> ParId
+  end,
   [
     {<<"_type">>, <<"activity">>},
-    {<<"_id">>, make_printable(Activity)},
+    {<<"_id">>, make_printable(Id)},
     {<<"@timestamp">>, format_timestamp(erlang:now())},
+    {<<"@parent">>, make_printable(ParentId)},
+    {<<"@description">>, Description},
+    {<<"@fields">>, {struct, Metadata}},
     {<<"@tags">>, []},
     {<<"@pid">>, make_printable(self())}
   ].
@@ -85,6 +90,7 @@ format_timestamp({_,_,Microsecs} = Timestamp) ->
   IsoStr = io_lib:format(FmtStr, [Y, Mo, D, H, Mn, S1]),
   list_to_binary(IsoStr).
 
+make_printable(undefined) -> null;
 make_printable(A) when is_atom(A) orelse is_binary(A) orelse is_number(A) -> A;
 make_printable(P) when is_pid(P) -> iolist_to_binary(pid_to_list(P));
 make_printable(L) when is_list(L) -> iolist_to_binary(L);

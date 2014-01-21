@@ -93,12 +93,14 @@ pop() ->
   poirot_client_srv:end_activity(Activity),
   set_current(Parent).
 
-set_description(Description) ->
+set_description(Description) when is_binary(Description) ->
   case current() of
     undefined -> undefined;
     Activity = #activity{} ->
       set_current(Activity#activity{description = Description})
-  end.
+  end;
+set_description(Description) ->
+  set_description(list_to_binary(Description)).
 
 add_meta(Metadata) ->
   case current() of

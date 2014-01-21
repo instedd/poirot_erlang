@@ -43,7 +43,7 @@ end_activity(Activity = #activity{id = Id}) ->
     | Body],
   gen_server:cast(?SERVER, {write, Id, <<"end_activity">>, Body1}).
 
-activity_body(#activity{id = Id, description = Description, metadata = Metadata, parent = Parent}) ->
+activity_body(#activity{id = Id, description = Description, metadata = Metadata, parent = Parent, async = Async}) ->
   ParentId = case Parent of
     undefined -> undefined;
     #activity{id = ParId} -> ParId
@@ -56,6 +56,7 @@ activity_body(#activity{id = Id, description = Description, metadata = Metadata,
     {<<"@description">>, Description},
     {<<"@fields">>, {struct, Metadata}},
     {<<"@tags">>, []},
+    {<<"@async">>, Async},
     {<<"@pid">>, make_printable(self())}
   ].
 

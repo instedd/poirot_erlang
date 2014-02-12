@@ -118,10 +118,8 @@ clear_meta() ->
   end.
 
 merge_meta(NewMeta, OldMeta) ->
-  SortedNew = lists:keysort(1, NewMeta),
-  SortedOld = lists:keysort(1, OldMeta),
-  lists:keymerge(1, SortedNew, SortedOld).
-
+  NewMetaDict = orddict:from_list(NewMeta),
+  orddict:merge(fun(_, V, _) -> V end, NewMetaDict, OldMeta).
 
 %%
 %% Private implementation

@@ -2,7 +2,8 @@
 -compile([{parse_transform, lager_transform}]).
 
 -export([current/0]).
--export([new/2, new/3, new_inside/3, new_inside/4, inside/2]).
+-export([new/2, new/3, new_inside/3, new_inside/4, inside/2, new_activity/1, new_activity/2]).
+-export([push/1, pop/0]).
 -export([set_description/1, add_meta/1, clear_meta/0]).
 
 -include("poirot.hrl").
@@ -58,7 +59,7 @@ saving(Activity, Fun) ->
   after
     set_current(Save)
   end.
-  
+
 wrap_fun_call(Fun) ->
   try
     Fun()
@@ -133,6 +134,9 @@ new_activity(Description) when is_list(Description) ->
   new_activity(list_to_binary(Description));
 new_activity(Description) ->
   #activity{id = new_id(), description = Description}.
+
+new_activity(Format, Args) ->
+  new_activity(io_lib:format(Format, Args)).
 
 new_async_activity(Description) when is_list(Description) ->
   new_async_activity(list_to_binary(Description));

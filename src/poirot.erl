@@ -1,7 +1,7 @@
 -module(poirot).
 -compile([{parse_transform, lager_transform}]).
 
--export([current/0]).
+-export([current/0, current_id/0]).
 -export([new/2, new/3, new_inside/3, new_inside/4, inside/2, new_activity/1, new_activity/2]).
 -export([push/1, pop/0]).
 -export([set_description/1, add_meta/1, clear_meta/0]).
@@ -14,6 +14,8 @@
 % Get the activity in the current process
 current() ->
   get(?KEY).
+current_id() ->
+  (current())#activity.id.
 
 % Encapsulate the execution of Fun() in a new activity. Previous activity (if
 % any) is popped back when Fun() finishes.
@@ -22,7 +24,14 @@ new(Description, Fun) ->
   wrap(Activity, Fun).
 new(Description, async, Fun) ->
   Activity = new_async_activity(Description),
-  wrap(Activity, Fun).
+  wrap(Activity, Fun);
+new(Description, Options, Fun) ->
+  Activity = case proplists:get_value(async, Options, false) of
+    true -> new_async_activity(Description);
+    _ -> new_activity(Description)
+  end,
+  Metadata = proplists:get_value(metadata, Options, []),
+  wrap(Activity#activity{metadata = Metadata}, Options, Fun).
 
 new_inside(Activity = #activity{}, Description, Fun) ->
   NewActivity = new_activity(Description),
@@ -43,12 +52,13 @@ inside(Activity = #activity{}, Fun) ->
 inside(ActivityId, Fun) ->
   inside(activity(ActivityId), Fun).
 
-wrap(Activity, Fun) ->
-  push(Activity),
+wrap(Activity, Fun) -> wrap(Activity, [], Fun).
+wrap(Activity, Options, Fun) ->
+  push(Activity, Options),
   try
     wrap_fun_call(Fun)
   after
-    pop()
+    pop(Options)
   end.
 
 saving(Activity, Fun) ->
@@ -75,23 +85,30 @@ wrap_fun_call(Fun) ->
       throw(Exception)
   end.
 
-
-push(Activity = #activity{metadata = Meta}) ->
+push(Activity) -> push(Activity, []).
+push(Activity = #activity{metadata = Meta}, Options) ->
   Current = current(),
   CurrentMeta = case Current of
     undefined -> [];
     #activity{metadata = M} -> M
   end,
-  LinkedMeta = merge_meta(Meta, CurrentMeta),
+  LinkedMeta = case proplists:get_value(inherit_meta, Options, false) of
+    true -> merge_meta(Meta, CurrentMeta);
+    _ -> Meta
+  end,
   LinkedActivity = Activity#activity{parent = Current, metadata = LinkedMeta},
   set_current(LinkedActivity),
   poirot_client_srv:begin_activity(LinkedActivity),
   LinkedActivity.
 
-pop() ->
+pop() -> pop([]).
+pop(Options) ->
   Activity = current(),
   Parent = Activity#activity.parent,
-  poirot_client_srv:end_activity(Activity),
+  case proplists:get_value(finalize, Options, true) of
+    true -> poirot_client_srv:end_activity(Activity);
+    _ -> ok
+  end,
   set_current(Parent).
 
 set_description(Description) when is_binary(Description) ->

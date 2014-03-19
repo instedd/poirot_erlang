@@ -1,8 +1,8 @@
 -module(poirot).
 -compile([{parse_transform, lager_transform}]).
 
--export([current/0, current_id/0]).
--export([new/2, new/3, new_inside/3, new_inside/4, inside/2, new_activity/1, new_activity/2]).
+-export([current/0, current_id/0, set_current/1]).
+-export([new/2, new/3, new_inside/3, new_inside/4, inside/2, new_activity/1, new_activity/2, activity/1]).
 -export([push/1, pop/0]).
 -export([set_description/1, add_meta/1, clear_meta/0]).
 

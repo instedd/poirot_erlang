@@ -5,6 +5,7 @@
 -export([new/2, new/3, new_inside/3, new_inside/4, inside/2, new_activity/1, new_activity/2, activity/1]).
 -export([push/1, pop/0]).
 -export([set_description/1, add_meta/1, clear_meta/0]).
+-export([proxied_log/2]).
 
 -include("poirot.hrl").
 
@@ -137,6 +138,24 @@ clear_meta() ->
 merge_meta(NewMeta, OldMeta) ->
   NewMetaDict = orddict:from_list(NewMeta),
   orddict:merge(fun(_, V, _) -> V end, NewMetaDict, OldMeta).
+
+%%
+%% @doc Adds a single log entry as if it was sent by another source.
+%% This is useful for cases in which the source of the events is not
+%% able to connect directly with the poirot receiver.
+%%
+%% LogEntry is a proplist with the following keys:
+%%
+%%  level
+%%  message
+%%  timestamp
+%%
+%%  [optional] pid
+%%  [optional] tags
+%%  [optional] fields  (additional metadata)
+%%
+proxied_log(Source, LogEntry) ->
+  poirot_client_srv:proxied_log(Source, LogEntry).
 
 %%
 %% Private implementation

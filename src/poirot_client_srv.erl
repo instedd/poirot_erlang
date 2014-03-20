@@ -1,7 +1,7 @@
 -module(poirot_client_srv).
 
 -export([start_link/0]).
--export([begin_activity/1, end_activity/1, lager_entry/1, set_source/1, get_source/0]).
+-export([begin_activity/1, end_activity/1, lager_entry/1, proxied_log/2, set_source/1, get_source/0]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 
 -include("poirot.hrl").
@@ -84,11 +84,36 @@ lager_entry(LagerMsg) ->
 
   gen_server:cast(?SERVER, {write, null, <<"logentry">>, Body}).
 
+
+proxied_log(Source, LogEntry) ->
+  Body = [
+      {<<"_type">>, <<"logentry">>},
+      {<<"@level">>, proplists:get_value(level, LogEntry)},
+      {<<"@message">>, proplists:get_value(message, LogEntry)},
+      {<<"@timestamp">>, format_unix_timestamp(proplists:get_value(timestamp, LogEntry))},
+      {<<"@tags">>, proplists:get_value(level, LogEntry, [])},
+      {<<"@activity">>, null},
+      {<<"@pid">>, proplists:get_value(pid, LogEntry, null)},
+      {<<"@fields">>, proplists:get_value(metadata, LogEntry, null)}
+    ],
+  gen_server:cast(?SERVER, {write, null, <<"logentry">>, Body, Source}).
+
 format_timestamp({_,_,Microsecs} = Timestamp) ->
   {{Y,Mo,D}, {H,Mn,S}} = calendar:now_to_datetime(Timestamp),
   S1 = S + Microsecs/1000000,
+  format_datetime({{Y,Mo,D}, {H,Mn,S1}}).
+
+format_unix_timestamp(Timestamp) when is_integer(Timestamp) ->
+  BaseDate      = calendar:datetime_to_gregorian_seconds({{1970,1,1},{0,0,0}}),
+  Seconds       = BaseDate + (Timestamp div 1000),
+  {{Y,Mo,D}, {H,Mn,S}} = calendar:gregorian_seconds_to_datetime(Seconds),
+  Milliseconds = Timestamp rem 1000,
+  S1 = S + Milliseconds/1000,
+  format_datetime({{Y,Mo,D}, {H,Mn,S1}}).
+
+format_datetime({{Y,Mo,D}, {H,Mn,S}}) ->
   FmtStr = "~4.10.0B-~2.10.0B-~2.10.0BT~2.10.0B:~2.10.0B:~9.6.0fZ",
-  IsoStr = io_lib:format(FmtStr, [Y, Mo, D, H, Mn, S1]),
+  IsoStr = io_lib:format(FmtStr, [Y, Mo, D, H, Mn, S]),
   list_to_binary(IsoStr).
 
 make_printable(undefined) -> null;
@@ -136,7 +161,13 @@ handle_call({set_source, Source}, _From, State) ->
   {reply, ok, State#state{source = Source}}.
 
 %% @private
-handle_cast({write, DocId, Type, Body}, State = #state{socket = Socket, source = Source}) ->
+handle_cast({write, DocId, Type, Body}, State = #state{source = Source}) ->
+  write(DocId, Type, Body, Source, State);
+
+handle_cast({write, DocId, Type, Body, Source}, State) ->
+  write(DocId, Type, Body, Source, State).
+
+write(DocId, Type, Body, Source, State = #state{socket = Socket}) ->
   Body1 = [{<<"@source">>, Source} | Body],
   Data = mochijson2:encode({struct, [
         {id, make_printable(DocId)},

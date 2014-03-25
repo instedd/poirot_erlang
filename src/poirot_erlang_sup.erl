@@ -9,7 +9,8 @@
 -export([init/1]).
 
 %% Helper macro for declaring children of supervisor
--define(CHILD(I, Type), {I, {I, start_link, []}, permanent, 5000, Type, [I]}).
+-define(CHILD(I, Type, Args), {I, {I, start_link, Args}, permanent, 5000, Type, [I]}).
+-define(CHILD(I, Type), ?CHILD(I, Type, [])).
 
 %% ===================================================================
 %% API functions
@@ -24,5 +25,7 @@ start_link() ->
 
 init([]) ->
   PoirotClient = ?CHILD(poirot_client_srv, worker),
-  {ok, { {one_for_one, 5, 10}, [PoirotClient]} }.
+  PoirotIndex = ?CHILD(poirot_index, worker, [[]]),
+  PoirotReceiver = ?CHILD(poirot_zmq_receiver, worker),
+  {ok, { {one_for_one, 5, 10}, [PoirotClient, PoirotIndex, PoirotReceiver]} }.
 

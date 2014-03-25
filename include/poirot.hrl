@@ -1,2 +1,2 @@
 -record(activity, {id, description, async = false, metadata = [], parent}).
-
+-record(event, {type, id, body}).

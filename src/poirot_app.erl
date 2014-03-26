@@ -1,4 +1,4 @@
--module(poirot_erlang_app).
+-module(poirot_app).
 
 -behaviour(application).
 
@@ -10,7 +10,7 @@
 %% ===================================================================
 
 start(_StartType, _StartArgs) ->
-    poirot_erlang_sup:start_link().
+    poirot_sup:start_link().
 
 stop(_State) ->
     ok.

@@ -1,12 +1,13 @@
-{application, poirot_erlang,
+{application, poirot,
  [
   {description, "Erlang Poirot Agent"},
   {vsn, "1"},
   {registered, []},
   {applications, [
                   kernel,
-                  stdlib
+                  stdlib,
+                  inets
                  ]},
-  {mod, { poirot_erlang_app, []}},
+  {mod, { poirot_app, []}},
   {env, []}
  ]}.

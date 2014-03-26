@@ -1,9 +1,7 @@
 -module(lager_poirot_backend).
-
 -behaviour(gen_event).
-
 -export([init/1, handle_call/2, handle_event/2, handle_info/2, terminate/2, code_change/3]).
-
+-include("poirot.hrl").
 -include_lib("lager/include/lager.hrl").
 
 -record(state, {level}).
@@ -32,7 +30,17 @@ handle_call(_Request, State) ->
 handle_event({log, Message}, State = #state{level = L}) ->
   case lager_util:is_loggable(Message, L, ?MODULE) of
     true ->
-      poirot_client_srv:lager_entry(Message),
+      Metadata = lager_msg:metadata(Message),
+      LogEntry = #logentry{
+        level = lager_msg:severity(Message),
+        timestamp = lager_msg:timestamp(Message),
+        message = lager_msg:message(Message),
+        activity = poirot_sender:make_printable(proplists:get_value(activity, Metadata, null)),
+        pid = poirot_sender:make_printable(proplists:get_value(pid, Metadata, null)),
+        metadata = filtered_metadata(Metadata),
+        tags = proplists:get_value(tags, Metadata, [])
+      },
+      poirot_sender:logentry(LogEntry),
       {ok, State};
     false ->
       {ok, State}
@@ -52,3 +60,20 @@ terminate(_Reason, _State) ->
 code_change(_OldVsn, State, _Extra) ->
   {ok, State}.
 
+filtered_metadata(Metadata) ->
+  {struct, lists:foldr(fun add_metadata/2, [], Metadata)}.
+
+add_metadata({activity, _}, Acc) ->
+  Acc;
+add_metadata({parent_activity, _}, Acc) ->
+  Acc;
+add_metadata({short_activity, _}, Acc) ->
+  Acc;
+add_metadata({pid, _}, Acc) ->
+  Acc;
+add_metadata({max_severity, _}, Acc) ->
+  Acc;
+add_metadata({type, _}, Acc) ->
+  Acc;
+add_metadata({Key, Value}, Acc) ->
+  [{Key, poirot_sender:make_printable(Value)} | Acc].

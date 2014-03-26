@@ -13,6 +13,7 @@ stop() ->
   gen_server:cast(?MODULE, stop).
 
 init(_Args) ->
+  process_flag(trap_exit, true),
   {ok, Context} = erlzmq:context(),
   {ok, Socket} = erlzmq:socket(Context, sub),
   ok = erlzmq:setsockopt(Socket, subscribe, ""),
@@ -31,7 +32,7 @@ handle_cast(stop, State) ->
 handle_cast(_Request, State) ->
   {noreply, State}.
 
-handle_info({message, Data}, State) ->
+handle_info({event, Data}, State) ->
   Event = poirot_event:parse(Data),
   poirot_index:index_event(Event),
   {noreply, State};
@@ -50,7 +51,7 @@ code_change(_OldVsn, State, _Extra) ->
 receive_loop(Socket) ->
   case erlzmq:recv(Socket) of
     {ok, Data} ->
-      ?MODULE ! {message, Data},
+      ?MODULE ! {event, Data},
       receive_loop(Socket);
     {error, Error} ->
       error(Error)

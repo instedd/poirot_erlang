@@ -17,9 +17,9 @@
 
 
 start_link() ->
-  Url = application:get_env(poirot_erlang, url, ?DEFAULT_URL),
-  Hwm = application:get_env(poirot_erlang, hwm, ?DEFAULT_HWM),
-  Source = application:get_env(poirot_erlang, source, ?DEFAULT_SOURCE),
+  Url = application:get_env(poirot, url, ?DEFAULT_URL),
+  Hwm = application:get_env(poirot, hwm, ?DEFAULT_HWM),
+  Source = application:get_env(poirot, source, ?DEFAULT_SOURCE),
   Options = [{source, Source}, {url, Url}, {hwm, Hwm}],
   gen_server:start_link({local, ?SERVER}, ?MODULE, Options, []).
 

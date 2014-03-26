@@ -20,7 +20,7 @@ init(Options) ->
   Prefix = proplists:get_value(prefix, Options, <<"poirot">>),
   EsUrl = proplists:get_value(elasticsearch_url, Options, "http://localhost:9200/"),
 
-  {ok, Template} = file:read_file(filename:join(code:priv_dir(poirot_erlang), "elasticsearch-template.json")),
+  {ok, Template} = file:read_file(filename:join(code:priv_dir(poirot), "elasticsearch-template.json")),
   MetadataTemplate = binary:replace(Template, <<"{{prefix}}">>, Prefix),
   {ok, {200, _}} = api_call(EsUrl, put, "_template/poirot_template", MetadataTemplate),
   {ok, #state{prefix = Prefix, elasticsearch_url = EsUrl}}.

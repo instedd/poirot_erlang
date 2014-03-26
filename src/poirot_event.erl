@@ -1,5 +1,5 @@
 -module(poirot_event).
--export([parse/1, timestamp_date/1]).
+-export([parse/1, dump/1, timestamp_date/1]).
 
 -include("poirot.hrl").
 
@@ -14,6 +14,13 @@ parse(Json) ->
 parse_type(<<"begin_activity">>) -> begin_activity;
 parse_type(<<"end_activity">>) -> end_activity;
 parse_type(<<"logentry">>) -> logentry.
+
+dump(#event{id = Id, type = Type, body = Body}) ->
+  mochijson2:encode({struct, [
+    {id, poirot_sender:make_printable(Id)},
+    {type, Type},
+    {body, {struct, Body}}
+  ]}).
 
 timestamp_date(#event{body = Body}) ->
   case proplists:get_value(<<"@timestamp">>, Body) of

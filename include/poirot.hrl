@@ -1,2 +1,3 @@
 -record(activity, {id, description, async = false, metadata = [], parent}).
+-record(logentry, {level, timestamp, message, activity, pid, metadata = [], tags = []}).
 -record(event, {type, id, body}).

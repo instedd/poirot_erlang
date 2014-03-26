@@ -99,7 +99,7 @@ push(Activity = #activity{metadata = Meta}, Options) ->
   end,
   LinkedActivity = Activity#activity{parent = Current, metadata = LinkedMeta},
   set_current(LinkedActivity),
-  poirot_client_srv:begin_activity(LinkedActivity),
+  poirot_sender:begin_activity(LinkedActivity),
   LinkedActivity.
 
 pop() -> pop([]).
@@ -107,7 +107,7 @@ pop(Options) ->
   Activity = current(),
   Parent = Activity#activity.parent,
   case proplists:get_value(finalize, Options, true) of
-    true -> poirot_client_srv:end_activity(Activity);
+    true -> poirot_sender:end_activity(Activity);
     _ -> ok
   end,
   set_current(Parent).

@@ -6,18 +6,22 @@
 
 -record(state, {zmq_context, zmq_socket}).
 
+-define(DEFAULT_BIND, "tcp://*:2120").
+
 start_link() ->
   gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 
 stop() ->
   gen_server:cast(?MODULE, stop).
 
-init(_Args) ->
+init(Args) ->
   process_flag(trap_exit, true),
+  Bind = proplists:get_value(bind, Args, ?DEFAULT_BIND),
+
   {ok, Context} = erlzmq:context(),
   {ok, Socket} = erlzmq:socket(Context, sub),
   ok = erlzmq:setsockopt(Socket, subscribe, ""),
-  ok = erlzmq:bind(Socket, "tcp://*:2120"),
+  ok = erlzmq:bind(Socket, Bind),
 
   erlang:spawn_link(fun() -> receive_loop(Socket) end),
 

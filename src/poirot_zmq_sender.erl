@@ -4,12 +4,19 @@
 
 -record(state, {zmq_context, zmq_socket}).
 
-init(_Args) ->
+-define(DEFAULT_URL, "tcp://localhost:2120").
+-define(DEFAULT_HWM, 50).
+
+init(Args) ->
   process_flag(trap_exit, true),
+
+  Url = proplists:get_value(url, Args, ?DEFAULT_URL),
+  Hwm = proplists:get_value(hwm, Args, ?DEFAULT_HWM),
+
   {ok, Context} = erlzmq:context(),
   {ok, Socket} = erlzmq:socket(Context, pub),
-  ok = erlzmq:setsockopt(Socket, sndhwm, 50),
-  ok = erlzmq:connect(Socket, "tcp://localhost:2120"),
+  ok = erlzmq:setsockopt(Socket, sndhwm, Hwm),
+  ok = erlzmq:connect(Socket, Url),
 
   {ok, #state{zmq_context = Context, zmq_socket = Socket}}.
 

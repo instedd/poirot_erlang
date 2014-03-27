@@ -19,10 +19,10 @@ send_event(Event) ->
   gen_server:cast(?MODULE, {event, Event}).
 
 begin_activity(Activity) ->
-  gen_server:cast(?MODULE, {begin_activity, Activity}).
+  gen_server:cast(?MODULE, {begin_activity, erlang:now(), Activity}).
 
 end_activity(Activity) ->
-  gen_server:cast(?MODULE, {end_activity, Activity}).
+  gen_server:cast(?MODULE, {end_activity, erlang:now(), Activity}).
 
 logentry(LogEntry) ->
   gen_server:cast(?MODULE, {logentry, LogEntry}).
@@ -34,24 +34,24 @@ init({Source, SenderModule, Options}) ->
 handle_call(_Request, _From, State) ->
   {reply, {error, unknown_call}, State}.
 
-handle_cast({begin_activity, Activity}, State) ->
+handle_cast({begin_activity, Timestamp, Activity}, State) ->
   Event = #event{
     type = begin_activity,
     id = Activity#activity.id,
     body = [
-      {<<"@start">>, format_timestamp(erlang:now())}
+      {<<"@start">>, format_timestamp(Timestamp)}
       | activity_body(Activity)
     ]
   },
   send_event(Event, State),
   {noreply, State};
 
-handle_cast({end_activity, Activity}, State) ->
+handle_cast({end_activity, Timestamp, Activity}, State) ->
   Event = #event{
     type = end_activity,
     id = Activity#activity.id,
     body = [
-      {<<"@end">>, format_timestamp(erlang:now())}
+      {<<"@end">>, format_timestamp(Timestamp)}
       | activity_body(Activity)
     ]
   },

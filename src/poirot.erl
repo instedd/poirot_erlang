@@ -162,7 +162,7 @@ proxied_log(Source, LogEntry) ->
 %%
 
 new_id() ->
-  uuid:to_string(uuid:v4()).
+  list_to_binary(uuid:to_string(uuid:v4())).
 
 new_activity(Description) when is_list(Description) ->
   new_activity(list_to_binary(Description));
@@ -177,20 +177,13 @@ new_async_activity(Description) when is_list(Description) ->
 new_async_activity(Description) ->
   #activity{id = new_id(), async = true, description = Description}.
 
-activity(Id) when is_binary(Id) ->
-  activity(binary_to_list(Id));
+activity(Id) when is_list(Id) ->
+  activity(list_to_binary(Id));
 activity(Id) ->
   #activity{id = Id}.
 
-short_id(undefined) ->
-  undefined;
-short_id(<<>>) ->
-  undefined;
-short_id([]) ->
-  undefined;
-short_id(Id) ->
-  <<Short:32, _:96>> = uuid:to_binary(Id),
-  lists:flatten(io_lib:format("~8.16.0b", [Short])).
+short_id(<<Short:8/binary, $-, _/binary>>) -> Short;
+short_id(_) -> undefined.
 
 %@ private
 set_current(Activity) ->

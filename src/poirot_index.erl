@@ -9,6 +9,8 @@
 
 -define(MAX_QUEUED_ITEMS, 300).
 -define(QUEUE_TIMEOUT, 3000).
+-define(DEFAULT_PREFIX, <<"poirot">>).
+-define(DEFAULT_ES_URL, "http://localhost:9200/").
 
 start_link(Options) ->
   gen_server:start_link({local, ?MODULE}, ?MODULE, Options, []).
@@ -17,8 +19,8 @@ index_event(Event) ->
   gen_server:cast(?MODULE, {event, Event}).
 
 init(Options) ->
-  Prefix = proplists:get_value(prefix, Options, <<"poirot">>),
-  EsUrl = proplists:get_value(elasticsearch_url, Options, "http://localhost:9200/"),
+  Prefix = proplists:get_value(prefix, Options, ?DEFAULT_PREFIX),
+  EsUrl = proplists:get_value(elasticsearch_url, Options, ?DEFAULT_ES_URL),
 
   {ok, Template} = file:read_file(filename:join(code:priv_dir(poirot), "elasticsearch-template.json")),
   MetadataTemplate = binary:replace(Template, <<"{{prefix}}">>, Prefix),

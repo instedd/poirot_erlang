@@ -2,8 +2,15 @@
 
 -behaviour(application).
 
+-export([start/0]).
+
 %% Application callbacks
 -export([start/2, stop/1]).
+
+% Standalone start
+start() ->
+  ok = inets:start(),
+  ok = application:start(poirot).
 
 %% ===================================================================
 %% Application callbacks

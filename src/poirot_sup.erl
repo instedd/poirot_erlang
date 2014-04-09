@@ -36,7 +36,7 @@ config() ->
     case ReceiverConfig of
       undefined -> indexer_config(SenderNeedsIndexer);
       _ -> [
-        ?CHILD(poirot_zmq_receiver, worker, ReceiverConfig) | indexer_config(true)
+        ?CHILD(poirot_zmq_receiver, worker, [ReceiverConfig]) | indexer_config(true)
       ]
     end
   ].

@@ -1,5 +1,5 @@
 -module(poirot_zmq_receiver).
--export([start_link/0, stop/0]).
+-export([start_link/0, start_link/1, stop/0]).
 
 -behaviour(gen_server).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
@@ -9,7 +9,10 @@
 -define(DEFAULT_BIND, "tcp://*:2120").
 
 start_link() ->
-  gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
+  start_link([]).
+
+start_link(Options) ->
+  gen_server:start_link({local, ?MODULE}, ?MODULE, [Options], []).
 
 stop() ->
   gen_server:cast(?MODULE, stop).

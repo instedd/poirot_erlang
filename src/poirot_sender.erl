@@ -1,5 +1,5 @@
 -module(poirot_sender).
--export([start_link/3, send_event/1, begin_activity/1, end_activity/1, logentry/1, make_printable/1]).
+-export([start_link/3, send_event/1, begin_activity/1, end_activity/1, logentry/1, make_printable/1, proxied_log/2]).
 -include("poirot.hrl").
 
 -behaviour(gen_server).
@@ -30,6 +30,18 @@ logentry(LogEntry) ->
 init({Source, SenderModule, Options}) ->
   {ok, SenderState} = SenderModule:init(Options),
   {ok, #state{source = Source, sender_module = SenderModule, sender_state = SenderState}}.
+
+proxied_log(Source, LogEntry) ->
+  Body = [
+      {<<"@level">>, proplists:get_value(level, LogEntry)},
+      {<<"@message">>, proplists:get_value(message, LogEntry)},
+      {<<"@timestamp">>, format_unix_timestamp(proplists:get_value(timestamp, LogEntry))},
+      {<<"@tags">>, []},
+      {<<"@activity">>, null},
+      {<<"@pid">>, proplists:get_value(pid, LogEntry, null)},
+      {<<"@fields">>, proplists:get_value(metadata, LogEntry, null)}
+    ],
+  gen_server:cast(?MODULE, {logentry, Body, Source}).
 
 handle_call(_Request, _From, State) ->
   {reply, {error, unknown_call}, State}.
@@ -66,6 +78,14 @@ handle_cast({logentry, LogEntry}, State) ->
   send_event(Event, State),
   {noreply, State};
 
+handle_cast({logentry, Body, Source}, State) ->
+  Event = #event{
+    type = logentry,
+    body = Body
+  },
+  send_event(Event, State, Source),
+  {noreply, State};
+
 handle_cast({event, Event}, State) ->
   send_event(Event, State),
   {noreply, State};
@@ -83,7 +103,9 @@ terminate(_Reason, #state{sender_module = SenderModule, sender_state = SenderSta
 code_change(_OldVsn, State, _Extra) ->
   {ok, State}.
 
-send_event(Event = #event{body = Body}, #state{source = Source, sender_module = SenderModule, sender_state = SenderState}) ->
+send_event(Event, State = #state{source = Source}) ->
+  send_event(Event, State, Source).
+send_event(Event = #event{body = Body}, #state{sender_module = SenderModule, sender_state = SenderState}, Source) ->
   Event2 = Event#event{body = [{<<"@source">>, Source} | Body]},
   SenderModule:send_event(Event2, SenderState).
 
@@ -118,13 +140,13 @@ format_timestamp({_, _, Microsecs} = Timestamp) ->
   S1 = S + Microsecs / 1000000,
   format_datetime({{Y, Mo, D}, {H, Mn, S1}}).
 
-% format_unix_timestamp(Timestamp) when is_integer(Timestamp) ->
-%   BaseDate      = calendar:datetime_to_gregorian_seconds({{1970,1,1},{0,0,0}}),
-%   Seconds       = BaseDate + (Timestamp div 1000),
-%   {{Y,Mo,D}, {H,Mn,S}} = calendar:gregorian_seconds_to_datetime(Seconds),
-%   Milliseconds = Timestamp rem 1000,
-%   S1 = S + Milliseconds/1000,
-%   format_datetime({{Y,Mo,D}, {H,Mn,S1}}).
+format_unix_timestamp(Timestamp) when is_integer(Timestamp) ->
+  BaseDate      = calendar:datetime_to_gregorian_seconds({{1970,1,1},{0,0,0}}),
+  Seconds       = BaseDate + (Timestamp div 1000),
+  {{Y,Mo,D}, {H,Mn,S}} = calendar:gregorian_seconds_to_datetime(Seconds),
+  Milliseconds = Timestamp rem 1000,
+  S1 = S + Milliseconds/1000,
+  format_datetime({{Y,Mo,D}, {H,Mn,S1}}).
 
 format_datetime({{Y, Mo, D}, {H, Mn, S}}) ->
   FmtStr = "~4.10.0B-~2.10.0B-~2.10.0BT~2.10.0B:~2.10.0B:~9.6.0fZ",

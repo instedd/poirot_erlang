@@ -155,7 +155,7 @@ merge_meta(NewMeta, OldMeta) ->
 %%  [optional] fields  (additional metadata)
 %%
 proxied_log(Source, LogEntry) ->
-  poirot_client_srv:proxied_log(Source, LogEntry).
+  poirot_sender:proxied_log(Source, LogEntry).
 
 %%
 %% Private implementation

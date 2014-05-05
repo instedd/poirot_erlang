@@ -5,7 +5,7 @@
 -export([new/2, new/3, new_inside/3, new_inside/4, inside/2, new_activity/1, new_activity/2, activity/1]).
 -export([push/1, pop/0]).
 -export([set_description/1, add_meta/1, clear_meta/0]).
--export([proxied_log/2]).
+-export([log/2, log/3, log/4, proxied_log/2]).
 
 -include("poirot.hrl").
 
@@ -16,7 +16,10 @@
 current() ->
   get(?KEY).
 current_id() ->
-  (current())#activity.id.
+  case current() of
+    #activity{id = Id} -> Id;
+    _ -> undefined
+  end.
 
 % Encapsulate the execution of Fun() in a new activity. Previous activity (if
 % any) is popped back when Fun() finishes.
@@ -138,6 +141,22 @@ clear_meta() ->
 merge_meta(NewMeta, OldMeta) ->
   NewMetaDict = orddict:from_list(NewMeta),
   orddict:merge(fun(_, V, _) -> V end, NewMetaDict, OldMeta).
+
+log(Level, Message) ->
+  log(Level, Message, [], []).
+log(Level, Message, Args) ->
+  log(Level, Message, Args, []).
+log(Level, Message, Args, Metadata) ->
+  LogEntry = #logentry{
+      level = Level, 
+      message = io_lib:format(Message, Args), 
+      timestamp = erlang:now(),
+      activity = current_id(), 
+      pid = self(),
+      metadata = {struct, Metadata}
+  },
+  poirot_sender:logentry(LogEntry).
+
 
 %%
 %% @doc Adds a single log entry as if it was sent by another source.

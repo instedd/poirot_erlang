@@ -156,5 +156,5 @@ format_datetime({{Y, Mo, D}, {H, Mn, S}}) ->
 make_printable(undefined) -> null;
 make_printable(A) when is_atom(A) orelse is_binary(A) orelse is_number(A) -> A;
 make_printable(P) when is_pid(P) -> iolist_to_binary(pid_to_list(P));
-make_printable(L) when is_list(L) -> iolist_to_binary(L);
-make_printable(Other) -> iolist_to_binary(io_lib:format("~p", [Other])).
+make_printable(L) when is_list(L) -> unicode:characters_to_binary(L);
+make_printable(Other) -> unicode:characters_to_binary(io_lib:format("~p", [Other])).

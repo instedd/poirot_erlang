@@ -12,6 +12,16 @@
     }
   },
   "mappings" : {
+    "activity" : {
+     "date_detection" : false,
+     "properties" : {
+       "@start" : { "type": "date", "index": "not_analyzed" },
+       "@end" : { "type": "date", "index": "not_analyzed" }
+     }
+    },
+    "logentry" : {
+     "date_detection" : false
+    },
     "_default_" : {
        "_all" : {"enabled" : true},
        "dynamic_templates" : [ {

@@ -27,5 +27,7 @@ timestamp_date(#event{body = Body}) ->
     <<Y:4/binary, $-, M:2/binary, $-, D:2/binary, _/binary>> -> {Y, M, D};
     _ ->
       {{Y, M, D}, _} = calendar:universal_time(),
-      {integer_to_binary(Y), integer_to_binary(M), integer_to_binary(D)}
+      {int_to_bin(Y), int_to_bin(M), int_to_bin(D)}
   end.
+
+int_to_bin(X) -> list_to_binary(integer_to_list(X)).

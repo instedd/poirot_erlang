@@ -4,7 +4,7 @@
 -export([current/0, current_id/0, set_current/1]).
 -export([new/2, new/3, new_inside/3, new_inside/4, inside/2, new_activity/1, new_activity/2, activity/1]).
 -export([push/1, pop/0]).
--export([set_description/1, add_meta/1, clear_meta/0]).
+-export([set_description/1, set_description/2, add_meta/1, clear_meta/0]).
 -export([log/2, log/3, log/4, proxied_log/2]).
 
 -include("poirot.hrl").
@@ -123,6 +123,9 @@ set_description(Description) when is_binary(Description) ->
   end;
 set_description(Description) ->
   set_description(list_to_binary(Description)).
+
+set_description(Description, Args) ->
+  set_description(io_lib:format(Description, Args)).
 
 add_meta(Metadata) ->
   case current() of

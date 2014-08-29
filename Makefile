@@ -15,7 +15,7 @@
 # under the License.
 #
 
-ERLFLAGS= -pa $(CURDIR)/.eunit -pa $(CURDIR)/ebin -pa $(CURDIR)/deps/*/ebin
+ERLFLAGS= -pa $(CURDIR)/.eunit -pa $(CURDIR)/poirot/ebin -pa $(CURDIR)/deps/*/ebin
 
 DEPS_PLT=$(CURDIR)/plt/deps_plt
 DEPS=erts kernel stdlib

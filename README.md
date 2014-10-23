@@ -15,7 +15,7 @@ Binary string with the name of the source of the log entries to be reported. Use
 
 #### Sender
 
-How to send entries to Poirot. If not set, will use Erlang messages to send the entries to the Erlang process. Can be set to `{zmq, [{url, "tcp://myserver:myport"}]}` to configure messages to be sent via zeromq; if no `url` is set then `localhost:2120` is used as default.
+How to send entries to Poirot. If not set, will use the in-proc Receiver (see below). Can be set to `{zmq, [{url, "tcp://myserver:myport"}]}` to configure messages to be sent via zeromq; if no `url` is set then `localhost:2120` is used as default.
 
 #### Receiver
 

@@ -5,9 +5,29 @@ This is the Erlang sender API and client, and receiver module for Poirot.
 
 It depends on ElasticSearch being running.
 
+## Configuration options
 
-Usage with the embedded in-proc receiver
-----------------------------------------
+Configuration has the following main sections:
+
+#### Source
+
+Binary string with the name of the source of the log entries to be reported. Use only if this application will send log entries.
+
+#### Sender
+
+How to send entries to Poirot. If not set, will use Erlang messages to send the entries to the Erlang process. Can be set to `{zmq, [{url, "tcp://myserver:myport"}]}` to configure messages to be sent via zeromq; if no `url` is set then `localhost:2120` is used as default.
+
+#### Receiver
+
+Set up the log entries Receiver to accept entries from one or more senders. Can be set to `{receiver, [{bind, "tcp://*:2120"}]}` to listen to zeromq messages in the selected interface; if the in-proc communication is to be used, then set to `{receiver, []}`.
+
+#### Index
+
+Configures the location of the ElasticSearch indices to be used by the Receiver to index the log entries. Will index to `localhost:9200` by default. Can be set as `{index, [{elasticsearch_url, "http://localhost:9200/"}, {prefix, <<"poirot">>}]}` to configure both the location of ElasticSearch and the prefix to be used for the Poirot indices.
+
+## Scenarios
+
+### Usage with the embedded in-proc receiver
 
 This option is recommended for small or standalone Erlang applications.
 
@@ -30,8 +50,7 @@ This option is recommended for small or standalone Erlang applications.
 ]}
 ```
 
-Usage with an external receiver
--------------------------------
+### Usage with an external receiver
 
 This option must be used together with a standalone receiver, and is recommended for large applications.
 
@@ -52,8 +71,7 @@ This option must be used together with a standalone receiver, and is recommended
 ```
 
 
-Usage as a standalone receiver
-------------------------------
+### Usage as a standalone receiver
 
 This option spawns a receiver on itself, without being embedded in a larger Erlang app.
 
@@ -71,7 +89,7 @@ the necessary runtime files.
 ```erlang
 {poirot, [
   {receiver, [
-    {bind, "tcp://*:2120 %>"}
+    {bind, "tcp://*:2120"}
   ]}},
   {index, [
     {elasticsearch_url, "http://localhost:9200/"},
@@ -83,8 +101,7 @@ the necessary runtime files.
 - Run the receiver with `make run`
 
 
-Configure Lager backend to send log entries to Poirot
------------------------------------------------------
+### Configure Lager backend to send log entries to Poirot
 
 - Optionally, you can add to your `myapp.config` configuration file in the `lager` section:
 

@@ -20,7 +20,14 @@ index_event(Event) ->
 
 init(Options) ->
   Prefix = proplists:get_value(prefix, Options, ?DEFAULT_PREFIX),
-  EsUrl = proplists:get_value(elasticsearch_url, Options, ?DEFAULT_ES_URL),
+  EsUrl = case os:getenv("ELASTICSEARCH_URL") of
+    false ->
+       case proplists:get_value(elasticsearch_url, Options) of
+        undefined -> ?DEFAULT_ES_URL;
+        EnvUrl -> EnvUrl
+      end;
+    OptionsUrl -> OptionsUrl
+  end,
 
   {ok, Template} = file:read_file(filename:join(code:priv_dir(poirot), "elasticsearch-template.json")),
   MetadataTemplate = binary:replace(Template, <<"{{prefix}}">>, Prefix),

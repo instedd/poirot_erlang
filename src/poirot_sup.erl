@@ -44,7 +44,7 @@ config() ->
 sender_config(zmq) -> sender_config({zmq, []});
 sender_config({zmq, Options}) -> {false, [poirot_zmq_sender, Options]};
 sender_config(inproc) -> {true, [poirot_inproc_sender, []]};
-sender_config(local) -> {true, [poirot_local_sender, []]};
+sender_config(local) -> {false, [poirot_local_sender, []]};
 sender_config(undefined) -> sender_config(inproc);
 sender_config(Config) -> exit({unsuported_poirot_sender, Config}).
 

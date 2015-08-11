@@ -15,7 +15,10 @@ Binary string with the name of the source of the log entries to be reported. Use
 
 #### Sender
 
-How to send entries to Poirot. If not set, will use the in-proc Receiver (see below). Can be set to `{zmq, [{url, "tcp://myserver:myport"}]}` to configure messages to be sent via zeromq; if no `url` is set then `localhost:2120` is used as default.
+How to send entries to the Poirot receiver. The possible values are:
+* `inproc` to send direct erlang messages to an inproc receiver (see below)
+* `local` to raise `poirot_local` events via `gen_event`; use this option to implement a custom receiver in your application
+* `{zmq, [{url, "tcp://myserver:myport"}]}` to send messages to a remote receiver via zmq; if no `url` is set then `localhost:2120` is used as default.
 
 #### Receiver
 
@@ -23,7 +26,7 @@ Set up the log entries Receiver to accept entries from one or more senders. Can 
 
 #### Index
 
-Configures the location of the ElasticSearch indices to be used by the Receiver to index the log entries. Will index to `localhost:9200` by default. Can be set as `{index, [{elasticsearch_url, "http://localhost:9200/"}, {prefix, <<"poirot">>}]}` to configure both the location of ElasticSearch and the prefix to be used for the Poirot indices.
+Configures the location of the ElasticSearch indices to be used by the Receiver to index the log entries. Will index to `localhost:9200` by default. Can be set as `{index, [{elasticsearch_url, "http://localhost:9200/"}, {prefix, <<"poirot">>}]}` to configure both the location of ElasticSearch and the prefix to be used for the Poirot indices. The indexer will be automatically set if the sender is set to `inproc`.
 
 ## Scenarios
 

@@ -1,5 +1,5 @@
 -module(poirot_sender).
--export([start_link/3, send_event/1, begin_activity/1, end_activity/1, logentry/1, make_printable/1, proxied_log/2]).
+-export([start_link/1, send_event/1, begin_activity/1, end_activity/1, logentry/1, make_printable/1, proxied_log/2]).
 -include("poirot.hrl").
 
 -behaviour(gen_server).
@@ -10,10 +10,10 @@
 -callback send_event(Event :: #event{}, State :: term()) -> term().
 -callback terminate(State :: term()) -> term().
 
--record(state, {source, sender_module, sender_state}).
+-record(state, {source}).
 
-start_link(Source, SenderModule, Options) ->
-  gen_server:start_link({local, ?MODULE}, ?MODULE, {Source, SenderModule, Options}, []).
+start_link(Source) ->
+  gen_server:start_link({local, ?MODULE}, ?MODULE, Source, []).
 
 send_event(Event) ->
   gen_server:cast(?MODULE, {event, Event}).
@@ -27,9 +27,8 @@ end_activity(Activity) ->
 logentry(LogEntry) ->
   gen_server:cast(?MODULE, {logentry, LogEntry}).
 
-init({Source, SenderModule, Options}) ->
-  {ok, SenderState} = SenderModule:init(Options),
-  {ok, #state{source = Source, sender_module = SenderModule, sender_state = SenderState}}.
+init(Source) ->
+  {ok, #state{source = Source}}.
 
 proxied_log(Source, LogEntry) ->
   Body = [
@@ -83,7 +82,7 @@ handle_cast({logentry, Body, Source}, State) ->
     type = logentry,
     body = Body
   },
-  send_event(Event, State, Source),
+  send_event(Event, State#state{source = Source}),
   {noreply, State};
 
 handle_cast({event, Event}, State) ->
@@ -96,18 +95,15 @@ handle_cast(_Request, State) ->
 handle_info(_Info, State) ->
   {noreply, State}.
 
-terminate(_Reason, #state{sender_module = SenderModule, sender_state = SenderState}) ->
-  SenderModule:terminate(SenderState),
+terminate(_Reason, _State) ->
   ok.
 
 code_change(_OldVsn, State, _Extra) ->
   {ok, State}.
 
-send_event(Event, State = #state{source = Source}) ->
-  send_event(Event, State, Source).
-send_event(Event = #event{body = Body}, #state{sender_module = SenderModule, sender_state = SenderState}, Source) ->
+send_event(Event = #event{body = Body}, #state{source = Source}) ->
   Event2 = Event#event{body = [{<<"@source">>, Source} | Body]},
-  SenderModule:send_event(Event2, SenderState).
+  poirot_event:broadcast(Event2).
 
 activity_body(#activity{description = Description, metadata = Metadata, parent = Parent, async = Async}) ->
   ParentId = case Parent of

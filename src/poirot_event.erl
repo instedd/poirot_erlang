@@ -1,5 +1,6 @@
 -module(poirot_event).
 -export([parse/1, dump/1, timestamp_date/1]).
+-export([start_link/0, add_handler/2, add_sup_handler/2, subscribe/1, broadcast/1]).
 
 -include("poirot.hrl").
 
@@ -31,3 +32,20 @@ timestamp_date(#event{body = Body}) ->
   end.
 
 int_to_bin(X) -> list_to_binary(integer_to_list(X)).
+
+start_link() ->
+  gen_event:start_link({local, poirot_event_bus}).
+
+add_handler(Handler, Args) ->
+  gen_event:add_handler(poirot_event_bus, Handler, Args).
+
+add_sup_handler(Handler, Args) ->
+  gen_event:add_sup_handler(poirot_event_bus, Handler, Args).
+
+% Subscribe to the events with a callback function.
+% This avoids the requirement of registering a new module to receive notifications.
+subscribe(Fun) ->
+  gen_event:add_sup_handler(poirot_event_bus, poirot_event_handler, Fun).
+
+broadcast(Event) ->
+  gen_event:notify(poirot_event_bus, Event).

@@ -1,5 +1,5 @@
 -module(poirot_index).
--export([start_link/1, index_event/1]).
+-export([start_link/1]).
 
 -behaviour(gen_server).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
@@ -19,6 +19,8 @@ index_event(Event) ->
   gen_server:cast(?MODULE, {event, Event}).
 
 init(Options) ->
+  poirot_event:subscribe(fun(Event) -> index_event(Event) end),
+
   Prefix = proplists:get_value(prefix, Options, ?DEFAULT_PREFIX),
   EsUrl = case os:getenv("ELASTICSEARCH_URL") of
     false ->

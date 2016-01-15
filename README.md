@@ -3,34 +3,42 @@ Poirot Erlang
 
 This is the Erlang sender API and client, and receiver module for Poirot.
 
-It depends on ElasticSearch being running.
-
 ## Configuration options
 
 Configuration has the following main sections:
 
-#### Source
+### Source
 
 Binary string with the name of the source of the log entries to be reported. Use only if this application will send log entries.
 
-#### Sender
+### Modules
 
-How to send entries to the Poirot receiver. The possible values are:
-* `inproc` to send direct erlang messages to an inproc receiver (see below)
-* `local` to raise `poirot_local` events via `gen_event`; use this option to implement a custom receiver in your application
-* `{zmq, [{url, "tcp://myserver:myport"}]}` to send messages to a remote receiver via zmq; if no `url` is set then `localhost:2120` is used as default.
+Different modules can be enabled to compose Poirot functionality. If just the name of the module is specified, it will use the default configuration.
 
-#### Receiver
+#### zmq_sender
 
-Set up the log entries Receiver to accept entries from one or more senders. Can be set to `{receiver, [{bind, "tcp://*:2120"}]}` to listen to zeromq messages in the selected interface; if the in-proc communication is to be used, then set to `{receiver, []}`.
+Deliver Poirot events through ZMQ.
+Parameters:
+  * `url`: The target address. Defaults to `tcp://localhost:2120`.
+  * `hwm`: ZQM high watermark (max number of messages before dropping). Defaults to `50`.
 
-#### Index
+#### zmq_receiver
 
-Configures the location of the ElasticSearch indices to be used by the Receiver to index the log entries. Will index to `localhost:9200` by default. Can be set as `{index, [{elasticsearch_url, "http://localhost:9200/"}, {prefix, <<"poirot">>}]}` to configure both the location of ElasticSearch and the prefix to be used for the Poirot indices. The indexer will be automatically set if the sender is set to `inproc`.
+Receives Poirot events through ZMQ.
+Parameters:
+  * `bind`: The address to bind the listening port. Defaults to `tcp://*:2120`.
+
+#### indexer
+
+Indexes the events in ElasticSearch. The events are inserted in separate indexes for each day. The name of each index has the form: `{prefix}-{year}.{month}.{day}`.
+Parameters:
+  * `prefix`: Index name prefix. Defaults to `poirot`.
+  * `elasticsearch_url`: Base URL of the ElasticSearch server. Defaults to `http://localhost:9200/`.
+
 
 ## Scenarios
 
-### Usage with the embedded in-proc receiver
+### Just index to Elasticsearch
 
 This option is recommended for small or standalone Erlang applications.
 
@@ -45,11 +53,23 @@ This option is recommended for small or standalone Erlang applications.
 ```erlang
 {poirot, [
   {source, <<"myapp">>},
-  {receiver, []},
-  {index, [
-    {elasticsearch_url, "http://localhost:9200/"},
-    {prefix, <<"poirot">>}
-  ]},
+  {modules, [
+    indexer
+  ]}
+]}
+```
+
+Or if you need to customize the indexer parameters:
+
+```erlang
+{poirot, [
+  {source, <<"myapp">>},
+  {modules, [
+    {indexer, [
+      {elasticsearch_url, "http://localhost:9200/"},
+      {prefix, <<"poirot">>}
+    }
+  ]}
 ]}
 ```
 
@@ -68,11 +88,11 @@ This option must be used together with a standalone receiver, and is recommended
 ```erlang
 {poirot, [
   {source, <<"myapp">>},
-  {sender, {zmq, [{url, "tcp://localhost:2120"}]}},
-  {receiver, undefined}
+  {modules, [
+    {zmq_sender, [{url, "tcp://localhost:2120"}]}
+  ]}
 ]}
 ```
-
 
 ### Usage as a standalone receiver
 
@@ -91,13 +111,15 @@ the necessary runtime files.
 
 ```erlang
 {poirot, [
-  {receiver, [
-    {bind, "tcp://*:2120"}
-  ]}},
-  {index, [
-    {elasticsearch_url, "http://localhost:9200/"},
-    {prefix, <<"poirot">>}
-  ]},
+  {modules, [
+    {zmq_receiver, [
+      {bind, "tcp://*:2120"}
+    ]},
+    {indexer, [
+      {elasticsearch_url, "http://localhost:9200/"},
+      {prefix, <<"poirot">>}
+    ]}
+  ]}
 ]}
 ```
 

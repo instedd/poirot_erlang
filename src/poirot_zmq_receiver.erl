@@ -41,7 +41,7 @@ handle_cast(_Request, State) ->
 
 handle_info({event, Data}, State) ->
   Event = poirot_event:parse(Data),
-  poirot_index:index_event(Event),
+  poirot_event:broadcast(Event),
   {noreply, State};
 
 handle_info(_Info, State) ->

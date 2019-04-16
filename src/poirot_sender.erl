@@ -19,10 +19,10 @@ send_event(Event) ->
   gen_server:cast(?MODULE, {event, Event}).
 
 begin_activity(Activity) ->
-  gen_server:cast(?MODULE, {begin_activity, erlang:now(), Activity}).
+  gen_server:cast(?MODULE, {begin_activity, erlang:timestamp(), Activity}).
 
 end_activity(Activity) ->
-  gen_server:cast(?MODULE, {end_activity, erlang:now(), Activity}).
+  gen_server:cast(?MODULE, {end_activity, erlang:timestamp(), Activity}).
 
 logentry(LogEntry) ->
   gen_server:cast(?MODULE, {logentry, LogEntry}).
@@ -111,7 +111,7 @@ activity_body(#activity{description = Description, metadata = Metadata, parent =
     #activity{id = ParId} -> ParId
   end,
   [
-    {<<"@timestamp">>, format_timestamp(erlang:now())},
+    {<<"@timestamp">>, format_timestamp(erlang:timestamp())},
     {<<"@parent">>, make_printable(ParentId)},
     {<<"@description">>, Description},
     {<<"@fields">>, {struct, Metadata}},

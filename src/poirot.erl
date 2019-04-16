@@ -151,10 +151,10 @@ log(Level, Message, Args) ->
   log(Level, Message, Args, []).
 log(Level, Message, Args, Metadata) ->
   LogEntry = #logentry{
-      level = Level, 
-      message = io_lib:format(Message, Args), 
-      timestamp = erlang:now(),
-      activity = current_id(), 
+      level = Level,
+      message = io_lib:format(Message, Args),
+      timestamp = erlang:timestamp(),
+      activity = current_id(),
       pid = self(),
       metadata = {struct, Metadata}
   },
@@ -217,4 +217,3 @@ set_current(Activity) ->
   LagerMd = proplists:delete(short_activity, proplists:delete(activity, lager:md())),
   lager:md([{activity,Id},{short_activity,short_id(Id)}|LagerMd]),
   Activity.
-
